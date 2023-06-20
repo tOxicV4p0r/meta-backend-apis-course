@@ -17,7 +17,7 @@ class MenuItemSerializer(serializers.ModelSerializer):
     
     #stock = serializers.IntegerField(source='inventory',min_value=0)
     #price = serializers.DecimalField(max_digits=6, decimal_places=2, min_value=2)
-    price_after_tax = serializers.SerializerMethodField(method_name='cal_tax')
+    # price_after_tax = serializers.SerializerMethodField(method_name='cal_tax')
     category = CategorySerializer(read_only=True)
     category_id = serializers.IntegerField(write_only=True)
     # category = serializers.HyperlinkedRelatedField(
@@ -37,11 +37,12 @@ class MenuItemSerializer(serializers.ModelSerializer):
     
     class Meta:
         model = MenuItem
-        fields = ['id','title','price','stock','price_after_tax','category','category_id']
+        # fields = ['id','title','price','stock','price_after_tax','category','category_id']
+        fields = ['id','title','price','inventory','category','category_id']
         extra_kwargs = {
             'price': {'min_value': 2},
             'inventory':{'min_value':0},
-            'stock':{'source':'inventory','min_value':0},
+            # 'stock':{'source':'inventory','min_value':0},
             'title':{
                 'validators':[
                     UniqueValidator(queryset=MenuItem.objects.all())

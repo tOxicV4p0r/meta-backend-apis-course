@@ -11,6 +11,11 @@ from rest_framework.decorators import api_view
 from rest_framework import viewsets
 from rest_framework.views import APIView
 
+from rest_framework.permissions import IsAuthenticated
+from rest_framework.decorators import permission_classes, throttle_classes
+
+from rest_framework.throttling import AnonRateThrottle, UserRateThrottle
+from .throttles import TenCallsPerMinute
 
 # generics view
 from rest_framework import generics
@@ -60,6 +65,8 @@ class SingleCategoryView(generics.RetrieveUpdateAPIView,generics.DestroyAPIView)
 class MenuItemsView(generics.ListCreateAPIView):
     queryset = MenuItem.objects.select_related('category').all()
     serializer_class = MenuItemSerializer
+    ordering_fields=['price','inventory']
+    search_fields=['title','category__title']
 
 class SingleMenuItemView(generics.RetrieveUpdateAPIView,generics.DestroyAPIView):
     queryset = MenuItem.objects.all()
@@ -108,6 +115,32 @@ def menu_items(req):
         serialized_item.save()
         return Response(serialized_item.data, status.HTTP_201_CREATED)
 
+@api_view()
+@permission_classes([IsAuthenticated])
+def secret(req):
+    return Response({"message":"Some secret message"})
+
+
+@api_view()
+@permission_classes([IsAuthenticated])
+def manager_view(req):
+    if req.user.groups.filter(name='Manager').exists():
+        return Response({"message":"Only Manager Should see"})
+    else:
+        return Response({"message":"You are not authorized"},403)
+
+@api_view()
+@throttle_classes([AnonRateThrottle])
+def throttle_check(req):
+    return Response({"message":"successful"})
+
+@api_view()
+@permission_classes([IsAuthenticated])
+# @throttle_classes([UserRateThrottle])
+@throttle_classes([TenCallsPerMinute])
+def throttle_check_auth(req):
+    return Response({"message":"logged in users only"})
+
 """ 
 def books(req):
     if(req.method == 'GET'):
@@ -129,3 +162,4 @@ def books(req):
             return JsonResponse({'error':'true','message':'required field missing'},status = 400)
         return JsonResponse(model_to_dict(book),status = 201)
  """
+
