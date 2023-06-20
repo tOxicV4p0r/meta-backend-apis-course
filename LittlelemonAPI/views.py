@@ -11,16 +11,17 @@ from rest_framework.decorators import api_view
 from rest_framework import viewsets
 from rest_framework.views import APIView
 
-from rest_framework.permissions import IsAuthenticated
+from rest_framework.permissions import IsAuthenticated, IsAdminUser
 from rest_framework.decorators import permission_classes, throttle_classes
+from django.contrib.auth.models import User, Group
 
 from rest_framework.throttling import AnonRateThrottle, UserRateThrottle
 from .throttles import TenCallsPerMinute
 
 # generics view
 from rest_framework import generics
-from .models import MenuItem,Book,Booker,Category
-from .serializers import MenuItemSerializer,BookSerializer,CategorySerializer
+from .models import MenuItem,Book,Booker,Category,RatingUss
+from .serializers import MenuItemSerializer,BookSerializer,CategorySerializer,RatingSerializer
 
 # Create your views here.
 # @csrf_exempt
@@ -63,6 +64,7 @@ class SingleCategoryView(generics.RetrieveUpdateAPIView,generics.DestroyAPIView)
     serializer_class = CategorySerializer
 
 class MenuItemsView(generics.ListCreateAPIView):
+    throttle_classes = [AnonRateThrottle,UserRateThrottle]
     queryset = MenuItem.objects.select_related('category').all()
     serializer_class = MenuItemSerializer
     ordering_fields=['price','inventory']
@@ -72,6 +74,22 @@ class SingleMenuItemView(generics.RetrieveUpdateAPIView,generics.DestroyAPIView)
     queryset = MenuItem.objects.all()
     serializer_class = MenuItemSerializer
 
+class RatingView(generics.ListCreateAPIView):
+    queryset = RatingUss.objects.all()
+    serializer_class = RatingSerializer
+
+    def get_permissions(self):
+        if(self.request.method == 'GET'):
+            return []
+        return [IsAuthenticated()]
+
+@api_view(['GET'])
+def rating_view(req):
+    if( req.method == 'GET'):
+        items = RatingUss.objects.all()
+        serialized_item = RatingSerializer(items,many=True)
+        return Response(serialized_item.data)
+    
 @api_view()
 def category_detail(req, pk):
     category = get_object_or_404(Category,pk=pk)
@@ -140,6 +158,22 @@ def throttle_check(req):
 @throttle_classes([TenCallsPerMinute])
 def throttle_check_auth(req):
     return Response({"message":"logged in users only"})
+
+@api_view(['POST','DELETE'])
+@permission_classes([IsAdminUser])
+def manager(req):
+    username = req.POST.get('username')
+    if username:
+        user = get_object_or_404(User, username=username)
+        managers = Group.objects.get(name="Manager")
+        if req.method =='POST':
+            managers.user_set.add(user)
+            return Response({"message":"add ok"})
+        elif req.method == 'DELETE':
+            managers.user_set.remove(user)
+            return Response({"message":"delete ok"})
+
+    return Response({"message":"error"}, status.HTTP_400_BAD_REQUEST)
 
 """ 
 def books(req):

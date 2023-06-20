@@ -1,9 +1,9 @@
 from rest_framework import serializers
-from rest_framework.validators import UniqueValidator
+from rest_framework.validators import UniqueValidator,UniqueTogetherValidator
 import bleach
 from decimal import Decimal
-from .models import MenuItem,Booker,Category
-from .models import Category
+from django.contrib.auth.models import User 
+from .models import MenuItem,Booker,Category,RatingUss
 
 class CategorySerializer(serializers.ModelSerializer):
     class Meta:
@@ -55,3 +55,28 @@ class BookSerializer(serializers.ModelSerializer):
     class Meta:
         model = Booker
         fields = ['id','title','author','price']
+
+class RatingSerializer (serializers.ModelSerializer): 
+    user = serializers.PrimaryKeyRelatedField( 
+        queryset = User.objects.all(),
+        default = serializers.CurrentUserDefault(),
+    )
+    # user_id = serializers.IntegerField(write_only=True)
+    # category_id = serializers.CharField(write_only=True)
+
+    class Meta:
+        model = RatingUss
+        fields = ['id','menuitem_id','rating','user']
+
+        validators = [
+            UniqueTogetherValidator(
+                queryset=RatingUss.objects.all(),
+                fields=['user', 'menuitem_id']
+            )
+        ]
+
+        extra_kwargs = {
+            'rating': {'min_value': 0, 'max_value':5},
+        }
+
+        

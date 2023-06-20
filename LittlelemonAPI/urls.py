@@ -22,4 +22,9 @@ urlpatterns = [
     path('manager-view/',views.manager_view),
     path('throttle-check/',views.throttle_check),
     path('throttle-check-auth/',views.throttle_check_auth),
+
+    path('groups/manager/users',views.manager),
+    
+    # path('ratings',views.rating_view),
+    path('ratings',views.RatingView.as_view()),
 ]
