@@ -3,11 +3,14 @@ from django.db import IntegrityError
 from django.http import JsonResponse
 from django.views.decorators.csrf import csrf_exempt
 from django.forms.models import model_to_dict
+from django.core.paginator import Paginator, EmptyPage
+
 from rest_framework.response import Response
 from rest_framework import status
 from rest_framework.decorators import api_view
 from rest_framework import viewsets
 from rest_framework.views import APIView
+
 
 # generics view
 from rest_framework import generics
@@ -72,6 +75,30 @@ def category_detail(req, pk):
 def menu_items(req):
     if( req.method == 'GET'):
         items = MenuItem.objects.select_related('category').all()
+
+        category_name = req.query_params.get('category')
+        to_price = req.query_params.get('to_price')
+        search = req.query_params.get('search')
+        ordering = req.query_params.get('ordering')
+        perpage = req.query_params.get('perpage',default=2)
+        page = req.query_params.get('page',default=1)
+
+        if category_name:
+            items = items.filter(category__title = category_name)
+        if to_price:
+            items = items.filter(price = to_price)
+        if search:
+            items = items.filter(tittle__contains = search)
+        if ordering:
+            ordering_fields = ordering.split(",")
+            items = items.order_by(*ordering_fields)
+
+        paginator = Paginator(items, per_page=perpage)
+        try:
+            items = paginator.page(number=page)
+        except EmptyPage:
+            items = []
+
         serialized_item = MenuItemSerializer(items,many=True)
         return Response(serialized_item.data)
 

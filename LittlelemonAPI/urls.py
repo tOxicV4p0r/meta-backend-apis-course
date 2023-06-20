@@ -8,8 +8,8 @@ urlpatterns = [
     path('books', views.BooksView.as_view()),
     path('books/<int:pk>', views.SingleBookView.as_view()),
 
-     path('menu-items', views.MenuItemsView.as_view()),
-    # path('menu-items', views.menu_items,name='menu-detail'),
+    # path('menu-items', views.MenuItemsView.as_view()),
+    path('menu-items', views.menu_items,name='menu-detail'),
     path('menu-items/<int:pk>', views.SingleMenuItemView.as_view()),
 
     path('categories', views.CategoriesView.as_view()),
